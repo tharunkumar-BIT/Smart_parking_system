@@ -5,6 +5,7 @@ import { app } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
 // import QRCode from "qrcode.react";
 import { motion } from "framer-motion";
+import Navbar from "./Navbar";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -36,8 +37,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
+      <Navbar/>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1 }}
-        className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
+        className="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto mt-16">
         <h2 className="text-3xl font-bold text-center text-gray-800">Dashboard</h2>
         {user && (
           <div className="mt-6">

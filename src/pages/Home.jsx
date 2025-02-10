@@ -1,17 +1,15 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { FaUserCircle } from "react-icons/fa";
+import { useState } from "react";
+import Navbar from "./Navbar";
 
 const Home = () => {
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Navigation Bar */}
-      <nav className="bg-white shadow-md p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-blue-600">Parking Slot Booking</h1>
-        <div>
-          <Link to="/login" className="mr-4 text-blue-500 hover:underline">Login</Link>
-          <Link to="/signup" className="text-blue-500 hover:underline">Sign Up</Link>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <motion.div 
@@ -22,7 +20,7 @@ const Home = () => {
       >
         <h2 className="text-4xl font-bold text-gray-800">Find & Book Your Parking Spot Easily</h2>
         <p className="text-gray-600 mt-4 text-lg">Seamless parking reservations at your fingertips.</p>
-        <Link to="/dashboard" className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
+        <Link to="/booking" className="mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all">
           Get Started
         </Link>
       </motion.div>
