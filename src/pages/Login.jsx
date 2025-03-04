@@ -21,23 +21,26 @@ const Login = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h2 className="text-2xl font-bold">Login</h2>
-      <input
-        type="email"
-        placeholder="Email"
-        className="border p-2 mt-4"
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        className="border p-2 mt-4"
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      <button onClick={handleLogin} className="bg-green-500 text-white p-2 mt-4">
-        Login
-      </button>
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-gray-100 to-white">
+      <div className="bg-white p-8 rounded-2xl shadow-lg w-96 text-center">
+        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Login</h2>
+        <input
+          type="email"
+          placeholder="Email"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition mb-4"
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition mb-6"
+        />
+        <button className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300">
+          Login
+        </button>
+        <p className="text-gray-500 mt-4 text-sm">
+          Don't have an account? <a href="#" className="text-blue-600 hover:underline">Sign up</a>
+        </p>
+      </div>
     </div>
   );
 };

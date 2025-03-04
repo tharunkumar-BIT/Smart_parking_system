@@ -18,10 +18,10 @@ const Home = () => {
         className="flex flex-col items-center justify-center text-center py-20"
       >
         <h2 className="text-4xl font-bold text-gray-800">
-          Find & Book Your Parking Spot Easily
+          Find Your Parking Spot Easily
         </h2>
         <p className="text-gray-600 mt-4 text-lg">
-          Seamless parking reservations at your fingertips.
+          Seamless parking at your fingertips.
         </p>
         <Link
           to="/booking"

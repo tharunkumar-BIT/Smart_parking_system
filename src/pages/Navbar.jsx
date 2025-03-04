@@ -7,7 +7,7 @@ const Navbar = () => {
 
   return (
     <nav className="bg-white shadow-md p-4 flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-blue-600">Parking Slot Booking</h1>
+      <h1 className="text-2xl font-bold text-blue-600">Parking Slots</h1>
       <div className="flex items-center">
         <Link to="/login" className="mr-4 text-blue-500 hover:underline">
           Login
