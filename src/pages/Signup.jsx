@@ -60,12 +60,18 @@ const Signup = () => {
       });
 
       // Store full details in MySQL
-      await axios.post("http://your-server-ip/api/signup", formData);
-
-      alert("Signup Successful!");
+      const response = await axios.post(
+        "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCKxGY2ssTc9FXsTU7mdY8r_qYSQ83ylnU",
+        {
+          email: formData.email,
+          password: formData.password,
+          returnSecureToken: true,
+        }
+      );
+      console.log("Signup Success:", response.data);
       navigate("/dashboard");
     } catch (error) {
-      alert(error.message);
+      console.error("Signup Error:", error.response?.data || error.message);
     }
   };
 
