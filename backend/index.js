@@ -14,9 +14,9 @@ app.use(express.json());
 
 const db = mysql.createConnection({
     host: 'localhost',
-    user: 'vishnu',
-    password: 'vishnu',
-    database: 'smartParking'
+    user: 'root',
+    password: '',
+    database: 'smartparking'
 });
 
 function handleDisconnect() {
