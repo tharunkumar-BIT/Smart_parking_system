@@ -4,11 +4,11 @@
 #include <MFRC522.h>
 
 // WiFi Credentials
-const char* ssid = "ASUS_A15 6389";
-const char* password = "00000000";
+const char* ssid = "TK's Pavilion";
+const char* password = "tk####4502";
 
 // MQTT Broker Details
-const char* mqttServer = "10.10.41.48";
+const char* mqttServer = "192.168.137.1";
 const int mqttPort = 1883;
 const char* mqttTopic = "parking/data";
 
