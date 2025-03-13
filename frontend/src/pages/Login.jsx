@@ -1,24 +1,35 @@
 import { useState } from "react";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { app } from "../firebaseConfig";
 import { useNavigate } from "react-router-dom";
-
-const auth = getAuth(app);
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      alert("Login Successful!");
-      navigate("/");
+        const response = await fetch("http://localhost:3000/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, password }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem("token", data.token); // Store token
+            alert("Login Successful!");
+            navigate("/dashboard"); // Redirect to dashboard
+        } else {
+            alert(data.message); // Show error message
+        }
     } catch (error) {
-      alert(error.message);
+        console.error("Login error:", error);
+        alert("Login failed. Please try again.");
     }
-  };
+};
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-gray-100 to-white">
@@ -27,18 +38,25 @@ const Login = () => {
         <input
           type="email"
           placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition mb-4"
         />
         <input
           type="password"
           placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition mb-6"
         />
-        <button className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300">
+        <button
+          onClick={handleLogin}
+          className="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+        >
           Login
         </button>
         <p className="text-gray-500 mt-4 text-sm">
-          Don't have an account? <a href="#" className="text-blue-600 hover:underline">Sign up</a>
+          Don't have an account? <a href="/signup" className="text-blue-600 hover:underline">Sign up</a>
         </p>
       </div>
     </div>

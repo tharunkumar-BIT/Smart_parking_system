@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const aedes = require('aedes');
 const net = require('net');
+const cors = require("cors");
 
 const app = express();
 const port = 3000;
@@ -12,12 +13,21 @@ const secretKey = 'your_secrettttt_keyyyyyyyyyyyyyy';
 
 app.use(express.json());
 
+app.use(cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'root',
     password: '',
     database: 'smartparking'
 });
+
+
 
 function handleDisconnect() {
     db.connect(err => {
@@ -148,15 +158,16 @@ class MqttServer {
 
 // User Authentication and Authorization
 app.post('/signup', async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, carNumber, phoneNumber } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const query = 'INSERT INTO user (name, email, password) VALUES (?, ?, ?)';
-    db.query(query, [name, email, hashedPassword], (err) => {
+    const query = 'INSERT INTO user (name, email, password, car_number, phone_number) VALUES (?, ?, ?, ?, ?)';
+    db.query(query, [name, email, hashedPassword, carNumber, phoneNumber], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ message: 'User created successfully' });
     });
 });
+
 
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
@@ -176,46 +187,49 @@ app.post('/login', async (req, res) => {
 });
 
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(403).json({ message: 'Access denied, token missing or invalid' });
+    const authHeader = req.headers["authorization"];
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(403).json({ message: "Access denied, token missing or invalid" });
     }
 
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(" ")[1];
     jwt.verify(token, secretKey, (err, user) => {
         if (err) {
-            if (err.name === 'TokenExpiredError') {
-                return res.status(401).json({ message: 'Token expired, please log in again.' });
-            }
-            return res.status(403).json({ message: 'Invalid token' });
+            return res.status(403).json({ message: "Invalid or expired token" });
         }
         req.user = user;
         next();
     });
 }
 
+
 function authorizeAdmin(req, res, next) {
     if (!req.user.isAdmin) return res.status(403).json({ message: 'Admin access required' });
     next();
 }
 
-app.get('/protected', authenticateToken, authorizeAdmin, (req, res) => {
+app.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: `Welcome ${req.user.email}, this is a protected route.` });
 });
 
-app.get('/logs', authenticateToken, authorizeAdmin, (req, res) => {
+
+app.get('/logs/:email', authenticateToken, (req, res) => {
+    const email = req.params.email;
+
     const query = `
         SELECT log.id, user.email, user.name, log.entry_timestamp, log.exit_timestamp, log.occupied 
         FROM log 
         JOIN user ON log.user_id = user.id 
+        WHERE user.email = ?
         ORDER BY log.entry_timestamp DESC
     `;
 
-    db.query(query, (err, results) => {
+    db.query(query, [email], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
     });
 });
+
 
 // Start the servers
 app.listen(port, () => {

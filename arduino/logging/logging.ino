@@ -3,22 +3,18 @@
 #include <SPI.h>
 #include <MFRC522.h>
 
-// WiFi Credentials
 const char* ssid = "TK's Pavilion";
 const char* password = "tk####4502";
 
-// MQTT Broker Details
 const char* mqttServer = "192.168.137.1";
 const int mqttPort = 1883;
 const char* mqttTopic = "parking/data";
 
-// RFID Module Pins
 #define SS_PIN D4
 #define RST_PIN D3
 MFRC522 rfid(SS_PIN, RST_PIN);
 MFRC522::MIFARE_Key key;
 
-// Ultrasonic Sensor Pins
 #define TRIG1 D0
 #define ECHO1 D1
 #define TRIG2 D2
@@ -38,25 +34,14 @@ void setup() {
 
     Serial.println("Connecting to WiFi...");
     WiFi.begin(ssid, password);
-
-    // WiFi Timeout Mechanism
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 30) { // 30 attempts (~30 sec)
+    while (WiFi.status() != WL_CONNECTED) {
         delay(1000);
         Serial.print(".");
-        attempts++;
     }
-
-    if (WiFi.status() == WL_CONNECTED) {
-        Serial.println("\nWiFi Connected!");
-    } else {
-        Serial.println("\nWiFi Connection Failed! Restarting...");
-        ESP.restart(); // Restart ESP if WiFi fails
-    }
+    Serial.println("\nWiFi Connected!");
 
     client.setServer(mqttServer, mqttPort);
-
-    connectMQTT(); // Ensures MQTT connection
+    connectMQTT();
 
     pinMode(TRIG1, OUTPUT); pinMode(ECHO1, INPUT);
     pinMode(TRIG2, OUTPUT); pinMode(ECHO2, INPUT);
@@ -64,19 +49,19 @@ void setup() {
 
 void loop() {
     if (!client.connected()) {
-        connectMQTT(); // Reconnect if MQTT disconnects
+        connectMQTT();
     }
     client.loop();
 
-    String rfidData = readRFID();
+    String email = readRFID();
     int slot1 = checkParkingSlot(TRIG1, ECHO1);
     int slot2 = checkParkingSlot(TRIG2, ECHO2);
 
     Serial.print("Slot 1: "); Serial.println(slot1 ? "FILLED" : "EMPTY");
     Serial.print("Slot 2: "); Serial.println(slot2 ? "FILLED" : "EMPTY");
 
-    if (rfidData != "") {
-        sendDataToServer(rfidData, slot1, slot2);
+    if (email != "") {
+        sendDataToServer(email, slot1, slot2);
     }
 
     Serial.println("---------------------------");
@@ -97,45 +82,47 @@ void connectMQTT() {
 }
 
 String readRFID() {
-    for (int attempts = 0; attempts < 3; attempts++) { // Retry mechanism (3 attempts)
-        if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-            Serial.println("Card detected!");
+    if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+        Serial.println("Card detected!");
 
-            byte block = 4;
-            byte buffer[18];
-            byte size = sizeof(buffer);
+        byte block = 4;
+        byte buffer[18];  // Increased buffer size to avoid issues
+        byte size = sizeof(buffer);
 
-            MFRC522::StatusCode status = rfid.PCD_Authenticate(
-                MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
+        MFRC522::StatusCode status = rfid.PCD_Authenticate(
+            MFRC522::PICC_CMD_MF_AUTH_KEY_A, block, &key, &(rfid.uid));
 
-            if (status != MFRC522::STATUS_OK) {
-                Serial.print("Authentication failed: ");
-                Serial.println(rfid.GetStatusCodeName(status));
-                continue; // Retry
-            }
-
-            status = rfid.MIFARE_Read(block, buffer, &size);
-            if (status != MFRC522::STATUS_OK) {
-                Serial.print("Reading failed: ");
-                Serial.println(rfid.GetStatusCodeName(status));
-                continue; // Retry
-            }
-
-            String rfidData = "";
-            for (byte i = 0; i < 16; i++) {
-                rfidData += (char)buffer[i];
-            }
-
-            Serial.print("RFID Data: "); Serial.println(rfidData);
-
-            rfid.PICC_HaltA();
-            rfid.PCD_StopCrypto1();
-
-            return rfidData;
+        if (status != MFRC522::STATUS_OK) {
+            Serial.print("Authentication failed: ");
+            Serial.println(rfid.GetStatusCodeName(status));
+            return "";
         }
+
+        status = rfid.MIFARE_Read(block, buffer, &size);
+        if (status != MFRC522::STATUS_OK) {
+            Serial.print("Reading failed: ");
+            Serial.println(rfid.GetStatusCodeName(status));
+            return "";
+        }
+
+        String email = "";
+        for (byte i = 0; i < 16; i++) {
+            if (buffer[i] == 0x00 || buffer[i] == 0xFF) break; // Stop at null or empty bytes
+            email += (char)buffer[i];
+        }
+
+        email.trim();  // Removes leading/trailing spaces
+
+        Serial.print("Email Read: "); Serial.println(email);
+
+        rfid.PICC_HaltA();
+        rfid.PCD_StopCrypto1();
+
+        return email;
     }
     return "";
 }
+
 
 int checkParkingSlot(int trigPin, int echoPin) {
     digitalWrite(trigPin, LOW);
@@ -144,32 +131,30 @@ int checkParkingSlot(int trigPin, int echoPin) {
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
-    long duration = pulseIn(echoPin, HIGH, 30000); // Timeout after 30ms
+    long duration = pulseIn(echoPin, HIGH, 30000);
     if (duration == 0) {
         Serial.println("Ultrasonic sensor timeout!");
-        return 0; // Assume slot is empty if no response
+        return 0;
     }
 
     int distance = duration * 0.034 / 2;
     return (distance < 10);
 }
 
-void sendDataToServer(String rfidData, int slot1, int slot2) {
+void sendDataToServer(String email, int slot1, int slot2) {
+  email += "@example.com";
     if (client.connected()) {
-        // Create a buffer to hold the JSON payload
-        char payload[128]; // Adjust size based on your expected payload length
+        char payload[128];
 
-        // Format the JSON payload
-        snprintf(payload, sizeof(payload), 
-                 "{\"rfid\":\"%s\",\"slot1\":\"%s\",\"slot2\":\"%s\"}",
-                 rfidData.c_str(), 
-                 slot1 ? "FILLED" : "EMPTY", 
+        snprintf(payload, sizeof(payload),
+                 "{\"email\":\"%s\",\"slot1\":\"%s\",\"slot2\":\"%s\"}",
+                 email.c_str(),
+                 slot1 ? "FILLED" : "EMPTY",
                  slot2 ? "FILLED" : "EMPTY");
 
         Serial.print("Publishing Payload: ");
         Serial.println(payload);
 
-        // Publish the payload
         client.publish(mqttTopic, payload);
     } else {
         Serial.println("MQTT connection lost, reconnecting...");
