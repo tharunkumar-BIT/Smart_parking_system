@@ -12,42 +12,52 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-              navigate("/login");
-              return;
-          }
-  
-          const response = await fetch("http://localhost:3000/protected", {
-              method: "GET",
-              headers: {
-                  "Authorization": `Bearer ${token}`
-              }
-          });
-  
-          if (response.ok) {
-              const data = await response.json();
-              setUserData(data);
-          } else {
-              console.error("Error fetching user data:", await response.json());
-              localStorage.removeItem("token");
-              navigate("/login");
-          }
-      } catch (error) {
-          console.error("Error fetching user data:", error);
-      }
-  };
-  
+        const token = localStorage.getItem("token");
+        if (!token) {
+          navigate("/login");
+          return;
+        }
 
-    const fetchLogs = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/logs", {
+        const response = await fetch("http://localhost:3000/protected", {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         });
+
         if (response.ok) {
           const data = await response.json();
+          setUserData(data);
+          console.log(data);
+          fetchLogs(data.id);  // Fetch logs using user_id
+        } else {
+          console.error("Error fetching user data:", await response.json());
+          localStorage.removeItem("token");
+          navigate("/login");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    console.log("Stored Token:", localStorage.getItem("token"));
+
+    const token = localStorage.getItem("token");
+
+    const fetchLogs = async (userId) => {
+      try {
+        const response = await fetch(`http://localhost:3000/logs?user_id=${userId}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        console.log("Fetch responce",response);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(data);
           setLogs(data);
         } else {
           console.error("Failed to fetch logs");
@@ -61,15 +71,26 @@ const Dashboard = () => {
 
     const client = mqtt.connect("ws://localhost:9001");
     client.on("connect", () => {
-      client.subscribe("logs/updates");
+      console.log("Connected to MQTT WebSocket");
+      client.subscribe("logs/updates", (err) => {
+        if (err) {
+          console.error("Subscription error:", err);
+        } else {
+          console.log("Successfully subscribed to logs/updates");
+        }
+      });
     });
     client.on("message", (topic, message) => {
+      console.log(message.toString());
       if (topic === "logs/updates") {
         setSlotData(JSON.parse(message.toString()));
       }
     });
+
     return () => client.end();
   }, [navigate]);
+
+  console.log(slotData);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -93,7 +114,6 @@ const Dashboard = () => {
           <ul>
             {logs.map((log, index) => (
               <li key={index} className="bg-white p-2 my-2 rounded-lg shadow-md">
-                <p><strong>Email:</strong> {log.email}</p>
                 <p><strong>Occupied:</strong> {log.occupied ? "Yes" : "No"}</p>
                 <p><strong>Entry:</strong> {log.entry_timestamp}</p>
                 <p><strong>Exit:</strong> {log.exit_timestamp || "Still Parked"}</p>
