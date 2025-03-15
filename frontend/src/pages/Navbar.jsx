@@ -1,45 +1,71 @@
-import { FaUserCircle } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { FaUserCircle } from "react-icons/fa";
+import { jwtDecode } from "jwt-decode";
 
 const Navbar = () => {
+  const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      try {
+        const decodedUser = jwtDecode(token);
+        setUser(decodedUser);
+      } catch (error) {
+        console.error("Invalid token", error);
+      }
+    }
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    setUser(null);
+  };
+
   return (
-    <nav className="bg-white shadow-md p-4 flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-blue-600">Parking Slots</h1>
-      <div className="flex items-center">
-        <Link to="/login" className="mr-4 text-blue-500 hover:underline">
-          Login
-        </Link>
-        <Link to="/signup" className="text-blue-500 hover:underline">
-          Sign Up
-        </Link>
-        <div className="relative ml-4">
-          <FaUserCircle
-            className="text-3xl cursor-pointer"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          />
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
-              <Link to="/" className="block px-4 py-2 hover:bg-gray-100">
-                Home
-              </Link>
-              <Link
-                to="/dashboard"
-                className="block px-4 py-2 hover:bg-gray-100"
-              >
-                Dashboard
-              </Link>
-              <Link to="/about" className="block px-4 py-2 hover:bg-gray-100">
-                About Us
-              </Link>
-              <button className="block w-full text-left px-4 py-2 hover:bg-gray-100">
-                Sign Out
-              </button>
-            </div>
-          )}
-        </div>
+    <nav className="flex justify-between p-4 bg-white shadow-md">
+      <Link to="/" className="text-xl font-bold text-blue-600">
+        Smart Parking System
+      </Link>
+      <div className="relative">
+        {user ? (
+          <div className="relative">
+            <FaUserCircle
+              className="text-3xl cursor-pointer"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            />
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border rounded-lg shadow-lg">
+                <Link
+                  to="/dashboard"
+                  className="block px-4 py-2 hover:bg-gray-100"
+                >
+                  Dashboard
+                </Link>
+                <Link to="/" className="block px-4 py-2 hover:bg-gray-100">
+                  Home
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <Link to="/login" className="text-blue-600 mr-4">
+              Login
+            </Link>
+            <Link to="/signup" className="text-blue-600">
+              Sign Up
+            </Link>
+          </div>
+        )}
       </div>
     </nav>
   );
