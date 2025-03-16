@@ -20,8 +20,7 @@ const Login = () => {
         const data = await response.json();
         if (response.ok) {
             localStorage.setItem("token", data.token); // Store token
-            alert("Login Successful!");
-            navigate("/dashboard"); // Redirect to dashboard
+            navigate("/"); // Redirect to dashboard
         } else {
             alert(data.message); // Show error message
         }
