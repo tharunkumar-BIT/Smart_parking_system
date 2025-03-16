@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -55,7 +55,7 @@ const Login = () => {
           Login
         </button>
         <p className="text-gray-500 mt-4 text-sm">
-          Don't have an account? <a href="/signup" className="text-blue-600 hover:underline">Sign up</a>
+          Don't have an account? <Link to="/signup" className="text-blue-600 hover:underline">Sign up</Link>
         </p>
       </div>
     </div>

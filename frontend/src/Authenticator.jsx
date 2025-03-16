@@ -18,7 +18,9 @@ export const AuthProvider = ({ children }) => {
       if (!token) {
         setIsAuthenticated(false);
         setLoading(false);
-        navigate("/login");
+        if (currentPath !== "/signup") {
+          navigate("/login");
+        }
         return;
       }
 
