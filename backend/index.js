@@ -168,7 +168,7 @@ const sendSlotStatus = () => {
     console.log(`📡 Sending slot status: ${JSON.stringify(occupiedSlots)}`);
 
     // Publish to frontend (React should subscribe to "slotStatus/update")
-    aedes.publish({
+    mqttServer.aedes.publish({
       topic: 'slotStatus/update',
       payload: JSON.stringify({ occupiedSlots })
     });
