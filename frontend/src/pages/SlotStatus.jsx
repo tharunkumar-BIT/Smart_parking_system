@@ -1,18 +1,9 @@
 import Navbar from "./Navbar";
-import { useState } from "react";
 import { useAuth } from "../Authenticator";
 
-const SlotStatus = ({ logs }) => {
-  const TOTAL_SLOTS = 4; // Total number of parking slots
-  const [currentLogs, setCurrentLogs] = useState(logs);
-  const occupiedSlots = currentLogs.filter((log) => log.occupied).length;
-  const unoccupiedSlots = TOTAL_SLOTS - occupiedSlots;
+const SlotStatus = () => {
   const { slotStatus } = useAuth();
-
-  const handleRefresh = () => {
-    // Simulate fetching real-time data
-    setCurrentLogs([...logs]);
-  };
+  const TOTAL_SLOTS = 4; // Total number of parking slots
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 animate-fade-in">
@@ -20,12 +11,6 @@ const SlotStatus = ({ logs }) => {
       <div className="p-6 rounded-lg text-center animate-slide-up">
         <h2 className="text-3xl font-bold text-blue-600 drop-shadow-md">Parking Slot Status</h2>
         <p className="text-gray-600 mt-2 text-lg">Monitor real-time availability of parking slots.</p>
-        <button
-          onClick={handleRefresh}
-          className="mt-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-transform transform hover:scale-105"
-        >
-          Refresh
-        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
@@ -35,11 +20,11 @@ const SlotStatus = ({ logs }) => {
         </div>
         <div className="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition duration-300">
           <h3 className="text-xl font-bold text-green-600">Available Slots</h3>
-          <p className="text-gray-700 text-lg mt-2 font-semibold">{unoccupiedSlots}</p>
+          <p className="text-gray-700 text-lg mt-2 font-semibold">{TOTAL_SLOTS - (slotStatus?.length || 0)}</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition duration-300">
           <h3 className="text-xl font-bold text-red-600">Occupied Slots</h3>
-          <p className="text-gray-700 text-lg mt-2 font-semibold">{occupiedSlots}</p>
+          <p className="text-gray-700 text-lg mt-2 font-semibold">{slotStatus?.length || 0}</p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-6 mt-6 max-w-md mx-auto">
@@ -49,9 +34,9 @@ const SlotStatus = ({ logs }) => {
             <div
               key={slotNumber}
               className={`p-6 rounded-lg text-white text-center font-bold text-xl shadow-lg transition-transform transform hover:scale-105
-              ${slotStatus.includes(slotNumber) ? "bg-red-500" : "bg-green-500"}`}
+              ${slotStatus?.includes(slotNumber) ? "bg-red-500" : "bg-green-500"}`}
             >
-              {slotStatus.includes(slotNumber) ? "🚗 Occupied" : "🅿️ Available"}
+              {slotStatus?.includes(slotNumber) ? "🚗 Occupied" : "🅿️ Available"}
             </div>
           );
         })}

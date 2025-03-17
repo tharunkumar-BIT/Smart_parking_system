@@ -72,30 +72,61 @@ class MqttServer {
     });
   }
 
+  publishSlotStatus(slotStatus) {
+    const occupiedSlots = [];
+    if (slotStatus.slot1) occupiedSlots.push(1);
+    if (slotStatus.slot2) occupiedSlots.push(2);
+
+    const payload = JSON.stringify({ occupiedSlots });
+    this.aedes.publish({ topic: "slotStatus/update", payload }, () => {
+      console.log(
+        `Published slot status update to slotStatus/update:`,
+        payload
+      );
+    });
+  }
+
   _setupEventListeners() {
     this.aedes.on("publish", (packet, client) => {
       if (client) {
         const message = packet.payload.toString();
+        console.log(`Received MQTT message on topic ${packet.topic}:`, message);
         try {
           const data = JSON.parse(message);
-          const {email,slot1,slot2} = data;
+          const { email, slot1, slot2 } = data;
+
           if (slot1 !== undefined && slot2 !== undefined) {
-            // Insert slot status into new table
+            // Update the existing row in the slot_status table
             db.query(
-              'INSERT INTO slot_status (slot1, slot2, timestamp) VALUES (?, ?, NOW())',
+              "UPDATE slot_status SET slot1 = ?, slot2 = ?, timestamp = NOW() WHERE id = 1", // Assuming id=1 is the row to update
               [slot1, slot2],
               (err) => {
-                if (err) console.error('Error inserting slot status:', err);
-                console.log(`✅ Slot status updated: slot1=${slot1}, slot2=${slot2}`);
+                if (err) {
+                  console.error("Error updating slot status:", err);
+                } else {
+                  console.log(
+                    `✅ Slot status updated: slot1=${slot1}, slot2=${slot2}`
+                  );
+                }
+
+                // Publish the updated slot status in the correct format
+                const occupiedSlots = [];
+                if (slot1) occupiedSlots.push(1);
+                if (slot2) occupiedSlots.push(2);
+                this.publishSlotStatus({ occupiedSlots });
               }
             );
           }
+
           if (email) {
             db.query(
               "SELECT id FROM user WHERE email = ?",
               [email],
               (err, userResults) => {
-                if (err || userResults.length === 0) return;
+                if (err || userResults.length === 0) {
+                  console.error("Error fetching user data:", err);
+                  return;
+                }
                 const userId = userResults[0].id;
                 db.query(
                   "SELECT * FROM log WHERE user_id = ? ORDER BY entry_timestamp DESC LIMIT 1",
@@ -130,7 +161,6 @@ class MqttServer {
                         }
                       );
                     }
-                    sendSlotStatus();
                   }
                 );
               }
@@ -146,34 +176,7 @@ class MqttServer {
     });
   }
 }
-const sendSlotStatus = () => {
-  db.query('SELECT slot1, slot2, timestamp FROM slot_status ORDER BY timestamp DESC LIMIT 1', (err, results) => {
-    if (err) {
-      console.error('Database error:', err);
-      return;
-    }
 
-    if (results.length === 0) {
-      console.log('No slot data found.');
-      return;
-    }
-
-    const { slot1, slot2 } = results[0];
-
-    // Prepare array format: [1, 2] means both slots are occupied, [1] means only slot1 is occupied, etc.
-    const occupiedSlots = [];
-    if (slot1) occupiedSlots.push(1);
-    if (slot2) occupiedSlots.push(2);
-
-    console.log(`📡 Sending slot status: ${JSON.stringify(occupiedSlots)}`);
-
-    // Publish to frontend (React should subscribe to "slotStatus/update")
-    mqttServer.aedes.publish({
-      topic: 'slotStatus/update',
-      payload: JSON.stringify({ occupiedSlots })
-    });
-  });
-};
 // Enable WebSockets for MQTT
 const httpServer = http.createServer(app);
 ws.createServer({ server: httpServer }, aedes().handle);
@@ -261,32 +264,6 @@ app.get("/logs", authenticateToken, (req, res) => {
     res.json(result); // Send logs data
   });
 });
-
-app.get("/slotstatus", (req, res) => {
-  db.query(
-    "SELECT slot1, slot2, timestamp FROM slot_status ORDER BY timestamp DESC LIMIT 1",
-    (err, results) => {
-      if (err) {
-        console.error("Database error:", err);
-        return res.status(500).json({ error: "Database error" });
-      }
-
-      if (results.length === 0) {
-        return res.status(404).json({ message: "No slot status data found" });
-      }
-
-      const { slot1, slot2, timestamp } = results[0];
-
-      // Convert to frontend-friendly format
-      const occupiedSlots = [];
-      if (slot1) occupiedSlots.push(1);
-      if (slot2) occupiedSlots.push(2);
-
-      res.json({ occupiedSlots, timestamp });
-    }
-  );
-});
-
 
 // Start the servers
 app.listen(port, () => {
