@@ -35,7 +35,7 @@ const Dashboard = ({ logs, userData }) => {
       {userData && (
         <div className="p-6 text-center animate-fade-in">
           <h1 className="text-4xl font-extrabold text-blue-600 drop-shadow-md">
-            Welcome Back, {userData.email}! 🚗
+            Welcome Back, {userData.name}! 🚗
           </h1>
           <p className="text-gray-600 mt-2 text-lg">
             Here’s an overview of your parking activity and slot status.
@@ -49,6 +49,12 @@ const Dashboard = ({ logs, userData }) => {
           <h3 className="text-xl font-bold text-blue-600">Total Bookings</h3>
           <p className="text-gray-700 text-lg mt-2 font-semibold">
             {logs.length}
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition duration-300">
+          <h3 className="text-xl font-bold text-blue-600">Your car number</h3>
+          <p className="text-gray-700 text-lg mt-2 font-semibold">
+            {userData.car_number}
           </p>
         </div>
       </div>

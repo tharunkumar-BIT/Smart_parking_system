@@ -78,10 +78,22 @@ class MqttServer {
         const message = packet.payload.toString();
         try {
           const data = JSON.parse(message);
-          if (data.email) {
+          const {email,slot1,slot2} = data;
+          if (slot1 !== undefined && slot2 !== undefined) {
+            // Insert slot status into new table
+            db.query(
+              'INSERT INTO slot_status (slot1, slot2, timestamp) VALUES (?, ?, NOW())',
+              [slot1, slot2],
+              (err) => {
+                if (err) console.error('Error inserting slot status:', err);
+                console.log(`✅ Slot status updated: slot1=${slot1}, slot2=${slot2}`);
+              }
+            );
+          }
+          if (email) {
             db.query(
               "SELECT id FROM user WHERE email = ?",
-              [data.email],
+              [email],
               (err, userResults) => {
                 if (err || userResults.length === 0) return;
                 const userId = userResults[0].id;
@@ -89,14 +101,17 @@ class MqttServer {
                   "SELECT * FROM log WHERE user_id = ? ORDER BY entry_timestamp DESC LIMIT 1",
                   [userId],
                   (err, logResults) => {
-                    if (err) return;
-                    if (logResults.length > 0 && logResults[0].occupied === 1) {
+                    if (err) {
+                      console.log("DataBase error");
+                      return;
+                    }
+                    if (logResults.length > 0 && logResults[0].occupied) {
                       db.query(
                         "UPDATE log SET occupied = 0, exit_timestamp = NOW() WHERE id = ?",
                         [logResults[0].id],
                         () => {
                           this.publishLogUpdate({
-                            email: data.email,
+                            email: email,
                             occupied: 0,
                             exit_timestamp: new Date().toISOString(),
                           });
@@ -108,13 +123,14 @@ class MqttServer {
                         [userId],
                         () => {
                           this.publishLogUpdate({
-                            email: data.email,
+                            email: email,
                             occupied: 1,
                             entry_timestamp: new Date().toISOString(),
                           });
                         }
                       );
                     }
+                    sendSlotStatus();
                   }
                 );
               }
@@ -130,7 +146,34 @@ class MqttServer {
     });
   }
 }
+const sendSlotStatus = () => {
+  db.query('SELECT slot1, slot2, timestamp FROM slot_status ORDER BY timestamp DESC LIMIT 1', (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return;
+    }
 
+    if (results.length === 0) {
+      console.log('No slot data found.');
+      return;
+    }
+
+    const { slot1, slot2 } = results[0];
+
+    // Prepare array format: [1, 2] means both slots are occupied, [1] means only slot1 is occupied, etc.
+    const occupiedSlots = [];
+    if (slot1) occupiedSlots.push(1);
+    if (slot2) occupiedSlots.push(2);
+
+    console.log(`📡 Sending slot status: ${JSON.stringify(occupiedSlots)}`);
+
+    // Publish to frontend (React should subscribe to "slotStatus/update")
+    aedes.publish({
+      topic: 'slotStatus/update',
+      payload: JSON.stringify({ occupiedSlots })
+    });
+  });
+};
 // Enable WebSockets for MQTT
 const httpServer = http.createServer(app);
 ws.createServer({ server: httpServer }, aedes().handle);
@@ -193,7 +236,7 @@ app.get("/protected", authenticateToken, (req, res) => {
   const email = req.user.email;
 
   db.query(
-    "SELECT id, email, isAdmin FROM user WHERE email = ?",
+    "SELECT id, name, email, isAdmin, car_number FROM user WHERE email = ?",
     [email],
     (err, results) => {
       if (err) {
@@ -218,6 +261,32 @@ app.get("/logs", authenticateToken, (req, res) => {
     res.json(result); // Send logs data
   });
 });
+
+app.get("/slotstatus", (req, res) => {
+  db.query(
+    "SELECT slot1, slot2, timestamp FROM slot_status ORDER BY timestamp DESC LIMIT 1",
+    (err, results) => {
+      if (err) {
+        console.error("Database error:", err);
+        return res.status(500).json({ error: "Database error" });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: "No slot status data found" });
+      }
+
+      const { slot1, slot2, timestamp } = results[0];
+
+      // Convert to frontend-friendly format
+      const occupiedSlots = [];
+      if (slot1) occupiedSlots.push(1);
+      if (slot2) occupiedSlots.push(2);
+
+      res.json({ occupiedSlots, timestamp });
+    }
+  );
+});
+
 
 // Start the servers
 app.listen(port, () => {

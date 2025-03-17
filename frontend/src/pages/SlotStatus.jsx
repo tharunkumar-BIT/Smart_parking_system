@@ -1,11 +1,13 @@
 import Navbar from "./Navbar";
 import { useState } from "react";
+import { useAuth } from "../Authenticator";
 
 const SlotStatus = ({ logs }) => {
   const TOTAL_SLOTS = 4; // Total number of parking slots
   const [currentLogs, setCurrentLogs] = useState(logs);
   const occupiedSlots = currentLogs.filter((log) => log.occupied).length;
   const unoccupiedSlots = TOTAL_SLOTS - occupiedSlots;
+  const { slotStatus } = useAuth();
 
   const handleRefresh = () => {
     // Simulate fetching real-time data
@@ -39,6 +41,20 @@ const SlotStatus = ({ logs }) => {
           <h3 className="text-xl font-bold text-red-600">Occupied Slots</h3>
           <p className="text-gray-700 text-lg mt-2 font-semibold">{occupiedSlots}</p>
         </div>
+      </div>
+      <div className="grid grid-cols-2 gap-6 mt-6 max-w-md mx-auto">
+        {[...Array(TOTAL_SLOTS)].map((_, index) => {
+          const slotNumber = index + 1;
+          return (
+            <div
+              key={slotNumber}
+              className={`p-6 rounded-lg text-white text-center font-bold text-xl shadow-lg transition-transform transform hover:scale-105
+              ${slotStatus.includes(slotNumber) ? "bg-red-500" : "bg-green-500"}`}
+            >
+              {slotStatus.includes(slotNumber) ? "🚗 Occupied" : "🅿️ Available"}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

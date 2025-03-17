@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [logs, setLogs] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [slotStatus, setSlotStatus] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -53,10 +54,16 @@ export const AuthProvider = ({ children }) => {
 
       const fetchLogs = async (userId) => {
         try {
-          const response = await fetch(`http://localhost:3000/logs?user_id=${userId}`, {
-            method: "GET",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          });
+          const response = await fetch(
+            `http://localhost:3000/logs?user_id=${userId}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
           if (response.ok) {
             const data = await response.json();
@@ -70,13 +77,34 @@ export const AuthProvider = ({ children }) => {
       };
 
       fetchUserData();
+      
     }, 1700); // 2-second delay for loading effect
 
     return () => clearTimeout(timeout); // Cleanup timeout on unmount
   }, [navigate]);
 
+  const fetchSlotStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/slotstatus");
+      if (response.ok) {
+        const data = await response.json();
+        setSlotStatus(data.occupiedSlots);
+      } else {
+        console.error("Error fetching slot status");
+      }
+    } catch (error) {
+      console.error("Error fetching slot status:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSlotStatus();
+    const interval = setInterval(fetchSlotStatus, 5000); // Refresh every 5 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ userData, logs,isAuthenticated, loading }}>
+    <AuthContext.Provider value={{ userData, logs, slotStatus, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );
