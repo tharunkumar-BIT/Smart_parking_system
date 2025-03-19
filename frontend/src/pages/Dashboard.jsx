@@ -8,8 +8,9 @@ const Dashboard = ({ logs, userData }) => {
   // Pagination Logic
   const indexOfLastLog = currentPage * logsPerPage;
   const indexOfFirstLog = indexOfLastLog - logsPerPage;
-  const currentLogs = logs.slice(indexOfFirstLog, indexOfLastLog);
-  const totalPages = Math.ceil(logs.length / logsPerPage);
+  const totalUserBookings = logs.filter(log => log.user_id === userData.id);
+  const userLogs = logs.filter(log => log.user_id === userData.id || log.car_number === userData.car_number).slice(-5);;
+  const currentLogs = userLogs;
 
   const formatDateTime = (timestamp) => {
     if (!timestamp) return "N/A";
@@ -48,7 +49,7 @@ const Dashboard = ({ logs, userData }) => {
         <div className="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition duration-300">
           <h3 className="text-xl font-bold text-blue-600">Total Bookings</h3>
           <p className="text-gray-700 text-lg mt-2 font-semibold">
-            {logs.length}
+            {totalUserBookings.length}
           </p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-lg transform hover:scale-105 transition duration-300">
@@ -62,7 +63,7 @@ const Dashboard = ({ logs, userData }) => {
       {/* ✅ Live Parking Logs Table with Pagination */}
       {logs.length > 0 && (
         <div className="mt-6 bg-white p-6 rounded-lg shadow-md animate-slide-up">
-          <h2 className="text-xl font-bold">Live Parking Logs</h2>
+          <h2 className="text-xl font-bold">Your Recent Parking Logs</h2>
           <table className="w-full mt-4">
             <thead>
               <tr className="bg-blue-600 text-white">
@@ -91,24 +92,6 @@ const Dashboard = ({ logs, userData }) => {
               ))}
             </tbody>
           </table>
-          {/* Pagination Controls */}
-          <div className="flex justify-center items-center mt-4">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-4 py-2 mx-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400 hover:bg-blue-700 transition"
-            >
-              Previous
-            </button>
-            <span className="text-lg font-semibold">Page {currentPage} of {totalPages}</span>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-4 py-2 mx-2 bg-blue-600 text-white rounded-lg disabled:bg-gray-400 hover:bg-blue-700 transition"
-            >
-              Next
-            </button>
-          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link , useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
 
@@ -28,7 +28,12 @@ const Navbar = () => {
 
   return (
     <nav className="flex justify-between p-4 bg-white shadow-md">
-      <Link to="/" className="text-2xl font-bold text-blue-600">
+      <Link to="/" className="text-2xl font-bold text-blue-600 flex items-center gap-3">
+        <img
+          src="/main-logo-transparent.png"
+          alt="Parking Icon"
+          className="w-8 h-8"
+        />
         Smart Parking System
       </Link>
       <div className="relative">
@@ -46,7 +51,10 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
-                <Link to="/" className="block px-4 py-2 hover:bg-gray-100 text-gray-700 flex items-center">
+                <Link
+                  to="/"
+                  className="block px-4 py-2 hover:bg-gray-100 text-gray-700 flex items-center"
+                >
                   Home
                 </Link>
                 <button
