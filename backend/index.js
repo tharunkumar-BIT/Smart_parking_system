@@ -72,56 +72,17 @@ class MqttServer {
     });
   }
 
-  publishSlotStatus(slotStatus) {
-    const occupiedSlots = [];
-    if (slotStatus.slot1) occupiedSlots.push(1);
-    if (slotStatus.slot2) occupiedSlots.push(2);
-
-    const payload = JSON.stringify({ occupiedSlots });
-    this.aedes.publish({ topic: "slotStatus/update", payload }, () => {
-      console.log(
-        `Published slot status update to slotStatus/update:`,
-        payload
-      );
-    });
-  }
-
   _setupEventListeners() {
     this.aedes.on("publish", (packet, client) => {
       if (client) {
         const message = packet.payload.toString();
-        console.log(`Received MQTT message on topic ${packet.topic}:`, message);
         try {
           const data = JSON.parse(message);
-          const { email, slot1, slot2 } = data;
 
-          if (slot1 !== undefined && slot2 !== undefined) {
-            // Update the existing row in the slot_status table
-            db.query(
-              "UPDATE slot_status SET slot1 = ?, slot2 = ?, timestamp = NOW() WHERE id = 1", // Assuming id=1 is the row to update
-              [slot1, slot2],
-              (err) => {
-                if (err) {
-                  console.error("Error updating slot status:", err);
-                } else {
-                  console.log(
-                    `✅ Slot status updated: slot1=${slot1}, slot2=${slot2}`
-                  );
-                }
-
-                // Publish the updated slot status in the correct format
-                const occupiedSlots = [];
-                if (slot1) occupiedSlots.push(1);
-                if (slot2) occupiedSlots.push(2);
-                this.publishSlotStatus({ occupiedSlots });
-              }
-            );
-          }
-
-          if (email) {
+          if (data.email) {
             db.query(
               "SELECT id FROM user WHERE email = ?",
-              [email],
+              [data.email],
               (err, userResults) => {
                 if (err || userResults.length === 0) {
                   console.error("Error fetching user data:", err);
@@ -142,7 +103,7 @@ class MqttServer {
                         [logResults[0].id],
                         () => {
                           this.publishLogUpdate({
-                            email: email,
+                            email: data.email,
                             occupied: 0,
                             exit_timestamp: new Date().toISOString(),
                           });
@@ -154,7 +115,7 @@ class MqttServer {
                         [userId],
                         () => {
                           this.publishLogUpdate({
-                            email: email,
+                            email: data.email,
                             occupied: 1,
                             entry_timestamp: new Date().toISOString(),
                           });
@@ -259,7 +220,7 @@ app.get("/protected", authenticateToken, (req, res) => {
 
 app.get("/logs", authenticateToken, (req, res) => {
   const userId = req.query.user_id;
-  db.query("SELECT * FROM log WHERE user_id = ?", [userId], (err, result) => {
+  db.query("SELECT * FROM log ", (err, result) => {
     if (err) return res.status(500).json({ message: "Database error" });
     res.json(result); // Send logs data
   });

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import mqtt from "mqtt";
+
 
 const AuthContext = createContext();
 
@@ -84,49 +84,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => clearTimeout(timeout); // Cleanup timeout on unmount
   }, [navigate]);
-
-  useEffect(() => {
-    const client = mqtt.connect("ws://localhost:9001");
-
-    client.on("connect", () => {
-        console.log("Connected to MQTT WebSocket");
-        client.subscribe("slotStatus/update", (err) => {
-            if (err) {
-                console.error("Error subscribing to topic:", err);
-            } else {
-                console.log("Subscribed to topic: slotStatus/update");
-            }
-        });
-    });
-
-    client.on("message", (topic, message) => {
-        console.log(`Received MQTT message on topic ${topic}:`, message.toString());
-        if (topic === "slotStatus/update") {
-            try {
-                const data = JSON.parse(message.toString());
-                const { occupiedSlots } = data;
-                console.log("Updating slotStatus:", occupiedSlots);
-                setSlotStatus(occupiedSlots || []); // Default to an empty array if occupiedSlots is undefined
-            } catch (error) {
-                console.error("Error parsing MQTT message:", error);
-            }
-        }
-    });
-
-    client.on("error", (err) => {
-        console.error("MQTT error:", err);
-    });
-
-    client.on("close", () => {
-        console.log("MQTT connection closed");
-    });
-
-    return () => {
-        if (client) {
-            client.end();
-        }
-    };
-}, []);
 
   return (
     <AuthContext.Provider
