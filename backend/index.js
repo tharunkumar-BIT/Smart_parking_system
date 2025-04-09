@@ -1,3 +1,4 @@
+require("dotenv").config(); // Load .env variables
 const express = require("express");
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
@@ -9,7 +10,7 @@ const http = require("http");
 const ws = require("websocket-stream");
 
 const app = express();
-const port = 3000;
+const port = 3000;;
 const mqttPort = 1883;
 const secretKey = "your_secrettttt_keyyyyyyyyyyyyyy";
 
@@ -228,7 +229,7 @@ app.get("/logs", authenticateToken, (req, res) => {
 
 // Start the servers
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server listening on port ${port}`);
 });
 
 const mqttServer = new MqttServer(mqttPort);
